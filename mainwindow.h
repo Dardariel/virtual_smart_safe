@@ -79,16 +79,20 @@ private:
     QByteArray code(QByteArray ba); // оборачивает последовательность в протокол смартсейфа
     QByteArray decode(QByteArray ba); // убирает последовательность протокола и оставляет только данные
     
-    
-    enum TENDER_TYPE
+
+    enum REQUEST_TYPE
     {
-        NO_TENDER,
-        TENDER_SMALL,
-        TENDER_SMALL_2,
-        TENDER_TIME,
-        TENDER
+        SAFESTATUS,
+        SAFESTATUSEX,
+        SAFEENCASHMENT,
+        SAFEDEPOSITBEGIN,
+        SAFEDEPOSITEND,
+        SAFEDEPOSITINFO,
+        SAFEDEPOSITSUM,
+        SAFETIMESET,
+        STWOB
     };
-    TENDER_TYPE m_tender_type;
+    REQUEST_TYPE m_request_type;
 
 public slots:
     void addLog(QString str); // отображение лога
