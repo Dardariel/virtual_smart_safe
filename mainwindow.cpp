@@ -180,6 +180,29 @@ QByteArray MainWindow::XML_Response(QByteArray ar)
         addLog("Wrong XML DomNode none ==RequestType==");
         return "";
     }
+    
+    if((dn_RequestType.nodeValue()=="SafeStatus")||(dn_RequestType.nodeValue()=="SafeStatusEx")||(dn_RequestType.nodeValue()=="SafeDepositSum"))
+    {
+        m_tender_type=TENDER_TYPE::TENDER;
+    }
+    else if(dn_RequestType.nodeValue()=="SafeEncashment")
+    {
+        m_tender_type=TENDER_TYPE::TENDER_SMALL;
+    }
+    else if((dn_RequestType.nodeValue()=="SafeDepositBegin")||(dn_RequestType.nodeValue()=="SafeDepositInfo"))
+    {
+        m_tender_type=TENDER_TYPE::TENDER_SMALL_2;
+    }
+    else if(dn_RequestType.nodeValue()=="SafeTimeSet")
+    {
+        m_tender_type=TENDER_TYPE::TENDER_TIME;
+    }
+    else
+    {
+        m_tender_type=TENDER_TYPE::NO_TENDER;
+    }
+    
+    
     QDomNode dn_ApplicationSender = attrib.namedItem("ApplicationSender");
     if(dn_ApplicationSender.isNull())
     {
@@ -309,34 +332,85 @@ QString MainWindow::Response_TimeStamp_now()
 }
 void MainWindow::Response_Tender(QXmlStreamWriter &x)
 {
-    x.writeStartElement("","Tender");
-    x.writeAttribute("LanguageCode", "en");
-    x.writeAttribute("BankAccepted", "False");
+    switch(m_tender_type)
+    {
+        case TENDER_TYPE::TENDER_SMALL:
+            
+            x.writeStartElement("","Tender");
+            x.writeAttribute("BankAccepted", "False");
+            if(m_sassion==SESSION_SAFE::ENCASHMENT)
+            {
+                x.writeTextElement("Incoming", "True");
+            }
+            else
+            {
+                x.writeTextElement("Incoming", "False");
+            }
+            x.writeEndElement(); // close Tender
+            
+            break;
+        case TENDER_TYPE::TENDER_SMALL_2:
+            
+            x.writeStartElement("","Tender");
+            
+            if(m_sassion==SESSION_SAFE::ENCASHMENT)
+            {
+                x.writeAttribute("Accepted", "True");
+            }
+            else
+            {
+                x.writeAttribute("Accepted", "False");
+            }
+            x.writeTextElement("Number", QString("%1").arg(m_base->get_last_inkas_number()));
+            x.writeEndElement(); // close Tender
+            
+            break;
+        case TENDER_TYPE::TENDER_TIME:
+            
+            x.writeStartElement("","Tender");
+            x.writeTextElement("TimeStamp", Response_TimeStamp_now());
+            x.writeEndElement(); // close Tender
+            
+            
+            break;
+        case TENDER_TYPE::TENDER:
+            x.writeStartElement("","Tender");
+            x.writeAttribute("LanguageCode", "en");
+            x.writeAttribute("BankAccepted", "False");
 
-    x.writeTextElement("TimeStamp", Response_TimeStamp_now());
-    switch(m_level)
-    {
-    case LEVEL_SAFE::NORMAL:
-        x.writeTextElement("Level", "Normal");break;
-    case LEVEL_SAFE::WARNING:
-        x.writeTextElement("Level", "Warning");break;
-    case LEVEL_SAFE::ERROR:
-        x.writeTextElement("Level", "Error");break;
+            x.writeTextElement("TimeStamp", Response_TimeStamp_now());
+            switch(m_level)
+            {
+            case LEVEL_SAFE::NORMAL:
+                x.writeTextElement("Level", "Normal");break;
+            case LEVEL_SAFE::WARNING:
+                x.writeTextElement("Level", "Warning");break;
+            case LEVEL_SAFE::ERROR:
+                x.writeTextElement("Level", "Error");break;
+            }
+            switch(m_sassion)
+            {
+            case SESSION_SAFE::IDLE:
+                x.writeTextElement("Session", "Idle");break;
+            case SESSION_SAFE::CASHIER:
+                x.writeTextElement("Session", "Cashier");break;
+            case SESSION_SAFE::ENCASHMENT:
+                x.writeTextElement("Session", "Encashment");break;
+            case SESSION_SAFE::ENGENEER:
+                x.writeTextElement("Session", "Engeneer");break;
+            }
+            x.writeTextElement("Status", getStatus());
+            x.writeTextElement("Message", getMessage());
+            x.writeEndElement(); // close Tender
+            
+            break;
+        case TENDER_TYPE::NO_TENDER:
+        default:
+            break;
     }
-    switch(m_sassion)
-    {
-    case SESSION_SAFE::IDLE:
-        x.writeTextElement("Session", "Idle");break;
-    case SESSION_SAFE::CASHIER:
-        x.writeTextElement("Session", "Cashier");break;
-    case SESSION_SAFE::ENCASHMENT:
-        x.writeTextElement("Session", "Encashment");break;
-    case SESSION_SAFE::ENGENEER:
-        x.writeTextElement("Session", "Engeneer");break;
-    }
-    x.writeTextElement("Status", getStatus());
-    x.writeTextElement("Message", getMessage());
-    x.writeEndElement(); // close Tender
+    
+    
+    
 
 }
 
